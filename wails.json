@@ -1,0 +1,9 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "Will Station",
+  "outputfilename": "WillStation.exe",
+  "frontend:dir": "frontend",
+  "author": {
+    "name": "Dominicaka"
+  }
+}
