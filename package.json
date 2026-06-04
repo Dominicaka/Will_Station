@@ -1,0 +1,40 @@
+{
+  "name": "will-station",
+  "version": "1.0.5",
+  "description": "Your Will will be arranged.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --x64",
+    "dist:all": "electron-builder --win --x64 --arm64"
+  },
+  "author": "Yong Wang",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "nedb-promises": "^6.2.1"
+  },
+  "build": {
+    "appId": "com.willstation.app",
+    "productName": "Will Station",
+    "win": {
+      "icon": "public/logo/app_logo.ico",
+      "target": ["nsis"]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "public/**/*"
+    ]
+  }
+}

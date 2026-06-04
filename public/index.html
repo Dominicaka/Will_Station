@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Will Station</title>
+  
+  <link rel="icon" type="image/png" href="logo/app_logo.png" />
+  <link rel="stylesheet" href="css/fonts.css" />
+  <link rel="stylesheet" href="css/flatpickr.css" /> 
+  <script src="js/flatpickr.js"></script>
+
+  <style>
+    /* ==========================================================================
+       1. VARIABLES & DESIGN SYSTEM (Morandi Day & Tech Night)
+       ========================================================================== */
+    :root {
+      /* Day Mode */
+      --app-bg: rgba(255, 255, 255, 0.4);
+      --sidebar-bg: rgba(244, 241, 238, 0.75);
+      --card-bg: rgba(255, 255, 255, 0.9);
+      --card-shadow: 0 4px 12px rgba(163, 153, 142, 0.08); 
+      --text-main: #3a3734;
+      --text-muted: #7a736d;
+      --text-subtle: #aba49c;
+      --border-color: rgba(181, 174, 167, 0.25);
+      --input-bg: #fcfbfa;
+      --active-menu-bg: #5d5751;
+      --active-menu-text: #ffffff;
+      --glass-border: none;
+      
+      --btn-add-bg: #e8e4e1;
+      --btn-add-text: #3a3734;
+      
+      --icon-filter: brightness(0.2); 
+      --icon-opacity: 1;
+      
+      --fluid-1: #f3e1dc; --fluid-2: #d8e2e6; --fluid-3: #e5d9e2; --fluid-4: #dfe6e0;
+
+      --overdue-color: #c97a7e;
+      --name-highlight: #000000; /* 日间模式人名纯黑 */
+    }
+
+    body[data-theme="dark"] {
+      /* Night Mode */
+      --app-bg: rgba(24, 24, 26, 0.5);
+      --sidebar-bg: rgba(28, 28, 30, 0.8);
+      --card-bg: #222224;
+      --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      --text-main: #f5f5f7;
+      --text-muted: #a1a1a6;
+      --text-subtle: #8e8e93;
+      --border-color: rgba(255, 255, 255, 0.06);
+      --input-bg: #151517;
+      --active-menu-bg: #323236; 
+      --active-menu-text: #f5f5f7;
+      --glass-border: none;
+      
+      --btn-add-bg: #4a4a4d;
+      --btn-add-text: #f5f5f7;
+      
+      --icon-filter: none;
+      --icon-opacity: 0.95;
+      
+      --fluid-1: #151418; --fluid-2: #110e16; --fluid-3: #0e1116; --fluid-4: #131012;
+
+      --overdue-color: #d48080;
+      --name-highlight: #ffffff; /* 夜间模式人名纯白 */
+    }
+
+    /* 🌟 全局降级 80% 基础字号，框框结构不动，内容全部等比例缩回 🌟 */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; }
+
+    /* ==========================================================================
+       2. STATIC GRADIENT BACKGROUNDS
+       ========================================================================== */
+    body {
+      width: 100vw; height: 100vh; overflow: hidden;
+      display: flex; justify-content: center; align-items: center; 
+      padding: 0; 
+      background: linear-gradient(135deg, var(--fluid-1), var(--fluid-2), var(--fluid-3), var(--fluid-4));
+      background-size: 100% 100%;
+    }
+
+    body.focus-mode-active {
+      --fluid-1: #dbe4e0; --fluid-2: #d1dbd8; --fluid-3: #d6e0db; --fluid-4: #c9d6d3;
+    }
+    body[data-theme="dark"].focus-mode-active {
+      --fluid-1: #101413; --fluid-2: #0e1214; --fluid-3: #121615; --fluid-4: #0c1011;
+    }
+
+    /* ==========================================================================
+       3. VIEW CONTROLLERS
+       ========================================================================== */
+    .view-container {
+      width: 100%; height: 100%; 
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .view-hidden { opacity: 0; pointer-events: none; position: absolute; transform: scale(1); }
+    .view-active { opacity: 1; pointer-events: auto; position: relative; transform: scale(1); }
+
+    .main-app-container {
+      background: var(--app-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); 
+      border-radius: 0; 
+      border: none; 
+      box-shadow: none; 
+      display: flex; overflow: hidden; height: 100%; width: 100%;
+    }
+
+    /* ==========================================================================
+       4. SIDEBAR NAVIGATION (内部尺寸按 80% 视觉等比重缩)
+       ========================================================================== */
+    .sidebar { flex: 0 0 248px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 32px 20px; user-select: none; overflow-y: auto; }
+    .sidebar::-webkit-scrollbar { width: 0; }
+
+    .brand-header { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; flex-shrink: 0; }
+    .brand-logo-img { width: 30px; height: 30px; border-radius: 8px; object-fit: contain; }
+    .brand-header h1 { font-size: 20px; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px; }
+
+    .menu-list { list-style: none; display: flex; flex-direction: column; gap: 5px; margin-bottom: auto; flex-shrink: 0; }
+    .menu-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 11px; cursor: pointer; color: var(--text-muted); font-size: 13px; font-weight: 500; transition: 0.2s ease; }
+    .menu-item-icon-wrapper { display: flex; align-items: center; gap: 10px; }
+    .menu-item:hover { background: rgba(0, 0, 0, 0.04); color: var(--text-main); }
+    body[data-theme="dark"] .menu-item:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+    .menu-item.active { background: var(--active-menu-bg); color: var(--active-menu-text); font-weight: 600; }
+    body[data-theme="dark"] .menu-item.active:hover { background: #3e3e42; }
+
+    .menu-item .badge { font-size: 10px; background: rgba(0, 0, 0, 0.05); padding: 2px 6px; border-radius: 8px; color: var(--text-muted); }
+    .menu-item.active .badge { background: rgba(255, 255, 255, 0.15); color: var(--active-menu-text); }
+
+    .sidebar-actions-deck { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+    .action-row-btn { width: 100%; border: none; background: var(--card-bg); color: var(--text-main); padding: 11px 14px; border-radius: 11px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px; box-shadow: var(--card-shadow); border: var(--glass-border); transition: all 0.2s ease; }
+    .action-row-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08); }
+    
+    .btn-icon-asset { width: 16px; height: 16px; object-fit: contain; opacity: var(--icon-opacity); filter: var(--icon-filter); }
+
+    .lang-text-node { margin-left: auto; font-size: 10px; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 6px; color: var(--text-muted); transition: all 0.2s; }
+    body[data-theme="dark"] .lang-text-node { background: rgba(255,255,255,0.08); color: var(--text-subtle); }
+    .lang-changing { opacity: 0; transform: scale(0.9); }
+
+    /* ==========================================================================
+       5. MAIN CONTENT FEED
+       ========================================================================== */
+    .main-content { flex: 1; display: flex; flex-direction: column; padding: 40px; overflow: hidden; }
+    
+    .uniform-card-style { background: var(--card-bg); padding: 10px 24px; border-radius: 16px; box-shadow: var(--card-shadow); border: var(--glass-border); }
+
+    .top-control-bar { display: flex; align-items: center; gap: 14px; margin-bottom: 26px; flex-shrink: 0; padding: 10px 24px; }
+    .input-main { flex: 1; border: none; background: transparent; outline: none; font-size: 14px; color: var(--text-main); }
+    .input-main::placeholder { color: var(--text-subtle); }
+
+    .date-input-wrapper { position: relative; display: flex; align-items: center; gap: 6px; background: var(--input-bg); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 10px; cursor: pointer; }
+    .input-date-hidden { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .date-display-text { font-size: 12px; font-weight: 600; color: var(--text-subtle); font-family: monospace; }
+
+    .btn-add-compact { border: none; background: var(--btn-add-bg); color: var(--btn-add-text); padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: opacity 0.2s; }
+    .btn-add-compact:hover { opacity: 0.85; }
+    .btn-add-compact .btn-icon-asset { filter: var(--icon-filter); opacity: 1; width: 12px; height: 12px; }
+    body[data-theme="dark"] .btn-add-compact .btn-icon-asset { filter: invert(1); }
+
+    .content-heading { font-size: 20px; font-weight: 700; color: var(--text-main); margin-bottom: 16px; flex-shrink: 0; }
+
+    .task-feed { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 11px; padding-bottom: 16px; }
+    .task-feed::-webkit-scrollbar, .focus-task-list::-webkit-scrollbar { width: 0; height: 0; }
+
+    .task-card { display: flex; align-items: center; gap: 14px; transition: transform 0.2s ease; }
+    .task-card:hover { transform: translateY(-1px); }
+
+    .checkbox { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--text-subtle); cursor: pointer; transition: 0.2s; flex-shrink: 0; position: relative; }
+    .completed .checkbox { background: var(--active-menu-bg); border-color: var(--active-menu-bg); }
+    .completed .checkbox::after { content: ''; position: absolute; top: 2px; left: 6px; width: 4px; height: 8px; border: solid var(--active-menu-text); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+    .completed .task-details h3 { text-decoration: line-through; color: var(--text-subtle); }
+
+    .overdue-task .task-details h3 { color: var(--overdue-color); }
+    .overdue-task .task-card-date { color: var(--overdue-color); }
+
+    .task-details { flex: 1; display: flex; align-items: center; overflow: hidden; }
+    .task-details h3 { font-size: 14px; font-weight: 500; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.3s; }
+
+    .task-card-right-deck { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+    .task-editable-date { position: relative; display: flex; align-items: center; cursor: pointer; padding: 4px 6px; border-radius: 6px; transition: background 0.2s; }
+    .task-editable-date:hover { background: var(--input-bg); }
+    .task-editable-date input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .task-card-date { font-size: 12px; color: var(--text-subtle); font-weight: 600; font-family: monospace; transition: color 0.3s; }
+    
+    .action-icon-btn { width: 20px; height: 20px; cursor: pointer; opacity: var(--icon-opacity); filter: var(--icon-filter); transition: transform 0.2s; object-fit: contain; }
+    .action-icon-btn:hover { transform: scale(1.15); }
+    .action-icon-btn.marked-true { opacity: 1; filter: none; }
+
+    .empty-state { text-align: center; color: var(--text-subtle); margin-top: 80px; font-size: 14px; }
+
+    /* ==========================================================================
+       6. FOCUS MODE UI
+       ========================================================================== */
+    .focus-mode-container { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
+    .focus-card { width: 100%; max-width: 480px; height: 85vh; max-height: 650px; background: var(--app-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 32px; border: var(--glass-border); box-shadow: 0 32px 80px rgba(0, 0, 0, 0.15); display: flex; flex-direction: column; padding: 40px; }
+    .focus-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .focus-header h2 { font-size: 22px; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; margin-bottom: 0; }
+    .focus-header .brand-logo-img { width: 34px; height: 34px; border-radius: 10px; }
+    
+    .focus-subtitle-input { width: 100%; border: none; background: transparent; font-size: 13px; color: var(--text-muted); outline: none; margin-bottom: 28px; font-weight: 500; }
+    .focus-subtitle-input::placeholder { color: var(--text-subtle); }
+
+    .focus-input-bar { display: flex; gap: 14px; margin-bottom: 26px; background: var(--card-bg); padding: 12px 16px; border-radius: 16px; box-shadow: var(--card-shadow); border: var(--glass-border); }
+    .focus-input-bar input { flex: 1; border: none; background: transparent; outline: none; font-size: 14px; color: var(--text-main); }
+    
+    .focus-input-bar button { border: none; background: var(--btn-add-bg); color: var(--btn-add-text); padding: 10px 20px; border-radius: 11px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .focus-input-bar button:hover { opacity: 0.85; }
+
+    .focus-task-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+    .focus-footer { display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid var(--border-color); padding-top: 20px; }
+    .focus-stats p { font-size: 11px; color: var(--text-subtle); font-weight: 600; margin-bottom: 4px; }
+    .focus-stats h3 { font-size: 30px; font-weight: 800; color: var(--text-main); line-height: 1; }
+    
+    .btn-exit-focus { background: var(--card-bg); border: var(--glass-border); box-shadow: var(--card-shadow); color: var(--text-main); padding: 11px 26px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn-exit-focus:hover { transform: translateY(-2px); }
+
+    /* ==========================================================================
+       7. ABOUT MODAL & CONFIRMATION DIALOG
+       ========================================================================== */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.25); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); display: flex; justify-content: center; align-items: center; z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+    .about-modal-card { 
+      width: 100%; max-width: 440px; 
+      max-height: 90vh; overflow-y: auto;
+      background: var(--card-bg); border: var(--glass-border); border-radius: 24px; padding: 32px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2); text-align: left; position: relative; 
+    }
+    .about-modal-card::-webkit-scrollbar { width: 0; height: 0; }
+    
+    .modal-header-section { display: flex; align-items: center; gap: 14px; margin-bottom: 26px; }
+    .modal-header-section .app-logo-frame { width: 52px; height: 52px; border-radius: 12px; object-fit: contain; }
+    
+    .brand-meta-text { display: flex; flex-direction: column; }
+    .brand-title-row { display: flex; align-items: center; gap: 8px; }
+    .brand-title-row h2 { color: var(--text-main); font-size: 20px; font-weight: 700; margin-bottom: 0; }
+    .brand-meta-text p { color: var(--text-muted); font-size: 12px; margin-top: 4px; }
+
+    .credits-group { margin-bottom: 20px; }
+    .credits-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .credits-title-row span { font-size: 15px; font-weight: 700; color: var(--text-main); }
+    .license-link { font-size: 11px; color: var(--text-muted); text-decoration: underline; cursor: pointer; margin-left: auto; }
+    
+    .credit-line, .license-text { font-size: 11px; color: var(--text-muted); line-height: 1.6; }
+    .credit-line span { font-weight: 700; color: var(--name-highlight); }
+
+    .modal-footer-controls { display: flex; flex-direction: column; gap: 10px; margin-top: 28px; }
+    .btn-modal-action { width: 100%; border: none; padding: 11px; border-radius: 11px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn-export, .btn-ok { background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); }
+    .btn-export:hover, .btn-ok:hover { background: var(--border-color); }
+
+    .btn-inline-row { display: flex; gap: 10px; width: 100%; }
+    .btn-inline-row .btn-modal-action { flex: 1; }
+
+    .modal-copyright { margin-top: 20px; font-size: 10px; color: var(--text-subtle); line-height: 1.6; text-align: center; border-top: 1px solid var(--border-color); padding-top: 14px; }
+    .modal-version { font-size: 10px; color: var(--text-subtle); text-align: center; margin-top: 4px; font-family: monospace; }
+
+    .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 1001; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+    .confirm-overlay.active { opacity: 1; pointer-events: auto; }
+    .confirm-dialog { background: var(--card-bg); border: var(--glass-border); border-radius: 16px; padding: 24px 28px; max-width: 320px; width: 90%; box-shadow: 0 16px 32px rgba(0,0,0,0.2); text-align: center; }
+    .confirm-dialog p { font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 20px; white-space: pre-line; }
+    .confirm-buttons { display: flex; gap: 10px; justify-content: center; }
+    .confirm-btn { border: none; padding: 8px 24px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .confirm-btn.primary { background: var(--active-menu-bg); color: var(--active-menu-text); }
+    .confirm-btn.secondary { background: var(--input-bg); color: var(--text-muted); border: 1px solid var(--border-color); }
+
+    /* ==========================================================================
+       8. FLATPICKR OVERRIDES
+       ========================================================================== */
+    .flatpickr-calendar { 
+      background: #ffffff !important;
+      border: 1px solid var(--border-color) !important; 
+      box-shadow: 0 16px 40px rgba(0,0,0,0.15) !important; 
+      border-radius: 16px !important; 
+      padding: 12px 10px !important; 
+      font-family: inherit !important;
+      width: 280px !important; 
+      max-width: calc(100vw - 40px);
+    }
+    body[data-theme="dark"] .flatpickr-calendar { 
+      background: #2c2c2e !important;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5) !important; 
+    }
+    
+    .flatpickr-current-month { 
+      display: flex !important; 
+      justify-content: center !important; 
+      align-items: center !important; 
+      padding: 0 !important; 
+      gap: 5px;
+    }
+    .flatpickr-monthDropdown-months, 
+    .numInputWrapper {
+      font-size: 13px !important; 
+      font-weight: 700 !important; 
+      color: var(--text-main) !important; 
+      background: var(--input-bg) !important; 
+      border: 1px solid var(--border-color) !important; 
+      border-radius: 6px !important; 
+      outline: none !important; 
+      padding: 3px 6px !important; 
+      margin: 0 !important; 
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.03) !important;
+      text-align: center;
+    }
+    .flatpickr-monthDropdown-months { width: 55% !important; }
+    .numInputWrapper { width: 35% !important; display: block !important; }
+    .numInputWrapper input.cur-year { display: block !important; padding: 0 !important; font-weight: 700 !important; color: inherit !important; background: transparent !important; border: none !important; text-align: center; width: 100%; }
+    .numInputWrapper span { display: none !important; }
+    
+    .flatpickr-month { color: var(--text-main) !important; fill: var(--text-main) !important; margin-bottom: 6px !important;}
+    .flatpickr-weekday { color: var(--text-subtle) !important; font-weight: 600 !important; }
+    .flatpickr-day { color: var(--text-main) !important; border-radius: 8px !important; margin-top: 2px !important; height: 32px !important; line-height: 32px !important; }
+    .flatpickr-day:hover, .flatpickr-day:focus { background: rgba(0,0,0,0.05) !important; border-color: transparent !important; }
+    body[data-theme="dark"] .flatpickr-day:hover { background: rgba(255,255,255,0.1) !important; }
+    .flatpickr-day.selected { background: var(--active-menu-bg) !important; color: var(--active-menu-text) !important; border-color: transparent !important; font-weight: 700 !important; }
+    .flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay { color: var(--text-subtle) !important; opacity: 0.5 !important; }
+
+    .flatpickr-innerContainer, .flatpickr-days, .dayContainer {
+      width: 100% !important; min-width: 100% !important; max-width: 100% !important;
+    }
+    .flatpickr-day { max-width: calc(100% / 7) !important; }
+    .flatpickr-months .flatpickr-month .flatpickr-current-month select.flatpickr-monthDropdown-months {
+      height: 24px !important; padding: 0 4px !important; font-size: 13px !important; font-weight: 600 !important; width: auto !important; display: inline-block !important;
+    }
+  </style>
+</head>
+<body data-theme="light">
+
+  <div class="view-container view-active" id="mainAppView">
+    <div class="main-app-container">
+      <aside class="sidebar">
+        <div class="brand-header">
+          <img src="logo/app_logo.png" class="brand-logo-img" alt="Logo" />
+          <h1 id="ui-app-title">Will Station</h1>
+        </div>
+
+        <ul class="menu-list">
+          <li class="menu-item active" onclick="switchMenu('all', this)">
+            <div class="menu-item-icon-wrapper"><img src="icon/all.png" class="btn-icon-asset" alt="all"/><span id="ui-menu-all">全部事项</span></div>
+            <span class="badge" id="badge-all">0</span>
+          </li>
+          <li class="menu-item" onclick="switchMenu('today', this)">
+            <div class="menu-item-icon-wrapper"><img src="icon/today.png" class="btn-icon-asset" alt="today"/><span id="ui-menu-today">今日</span></div>
+            <span class="badge" id="badge-today">0</span>
+          </li>
+          <li class="menu-item" onclick="switchMenu('mark', this)">
+            <div class="menu-item-icon-wrapper"><img src="icon/mark.png" class="btn-icon-asset" alt="mark"/><span id="ui-menu-mark">标记</span></div>
+            <span class="badge" id="badge-mark">0</span>
+          </li>
+          <li class="menu-item" onclick="switchMenu('done', this)">
+            <div class="menu-item-icon-wrapper"><img src="icon/done.png" class="btn-icon-asset" alt="done"/><span id="ui-menu-done">完成</span></div>
+            <span class="badge" id="badge-done">0</span>
+          </li>
+          <li class="menu-item" onclick="switchMenu('overdue', this)">
+            <div class="menu-item-icon-wrapper"><img src="icon/outdate.png" class="btn-icon-asset" alt="overdue"/><span id="ui-menu-overdue">过期</span></div>
+            <span class="badge" id="badge-overdue">0</span>
+          </li>
+          <li class="menu-item" onclick="switchMenu('bin', this)">
+            <div class="menu-item-icon-wrapper"><img src="icon/bin.png" class="btn-icon-asset" alt="bin"/><span id="ui-menu-bin">回收站</span></div>
+            <span class="badge" id="badge-bin">0</span>
+          </li>
+        </ul>
+
+        <div class="sidebar-actions-deck">
+          <button class="action-row-btn" onclick="toggleTheme()">
+            <img src="icon/day.png" id="theme-btn-asset" class="btn-icon-asset" alt="theme"/>
+            <span id="ui-btn-theme">切换色彩</span>
+          </button>
+          <button class="action-row-btn" onclick="toggleLanguage()">
+            <img src="icon/language.png" class="btn-icon-asset" alt="lang"/>
+            <span id="ui-btn-lang">切换语言</span>
+            <span class="lang-text-node" id="lang-indicator">简体中文</span>
+          </button>
+          <button class="action-row-btn" onclick="triggerFocusMode()">
+            <img src="icon/focus.png" class="btn-icon-asset" alt="focus"/>
+            <span id="ui-btn-focus">专注模式</span>
+          </button>
+          <button class="action-row-btn" onclick="toggleModal(true)">
+            <img src="icon/about.png" class="btn-icon-asset" alt="about"/>
+            <span id="ui-btn-about">关于</span>
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <div class="uniform-card-style top-control-bar" id="mainTopControlBar">
+          <input type="text" id="taskInput" class="input-main" placeholder="今天计划完成哪些工作？" />
+          <div class="date-input-wrapper">
+            <img src="icon/calendar.png" class="btn-icon-asset" style="opacity:0.6;" alt="cal"/>
+            <span class="date-display-text" id="dateDisplay"></span>
+            <input type="text" id="taskDate" class="input-date-hidden" />
+          </div>
+          <button class="btn-add-compact" onclick="handleAddTask()">
+            <img src="icon/add.png" class="btn-icon-asset" alt="add"/>
+            <span id="ui-btn-add-text">添加</span>
+          </button>
+        </div>
+
+        <h2 class="content-heading" id="currentViewTitle">全部事项</h2>
+        <div class="task-feed" id="mainTaskFeed"></div>
+      </main>
+    </div>
+  </div>
+
+  <div class="view-container view-hidden focus-mode-container" id="focusModeView">
+    <div class="focus-card">
+      <div class="focus-header">
+        <h2>Will Station</h2>
+        <img src="logo/app_logo.png" class="brand-logo-img" alt="logo">
+      </div>
+      
+      <input type="text" id="focusSubtitle" class="focus-subtitle-input" placeholder="Focus on Today" oninput="saveSubtitleDebounced()">
+
+      <div class="focus-input-bar">
+        <input type="text" id="focusTaskInput" placeholder="添加一项今日新任务..." />
+        <button onclick="handleAddFocusTask()" id="ui-btn-focus-add">添加</button>
+      </div>
+
+      <div class="focus-task-list" id="focusTaskFeed"></div>
+
+      <div class="focus-footer">
+        <div class="focus-stats">
+          <p id="ui-focus-left">今日剩余任务</p>
+          <h3 id="focusCountDisplay">0</h3>
+        </div>
+        <button class="btn-exit-focus" onclick="exitFocusMode()" id="ui-btn-exit">退出专注</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="aboutModal">
+    <div class="about-modal-card">
+      <div class="modal-header-section">
+        <img src="logo/app_logo.png" class="app-logo-frame" alt="App Logo" />
+        <div class="brand-meta-text">
+          <div class="brand-title-row">
+            <h2 id="ui-modal-title">Will Station</h2>
+          </div>
+          <p id="ui-modal-subtitle">Your Will will be arranged.</p>
+        </div>
+      </div>
+
+      <div class="credits-group">
+        <div class="credits-title-row">
+          <img src="icon/badge.png" class="btn-icon-asset" alt="badge"/>
+          <span id="ui-lbl-credits">创作者</span>
+        </div>
+        <div class="credit-line" id="ui-lbl-lead-dev">Lead Developed by <span>Dominicaka</span></div>
+        <div class="credit-line" id="ui-lbl-special-thanks" style="margin-top: 8px;">
+          Special Thanks:<br>
+          <span>LuckyLuke</span> for the logo asset.<br>
+          <span>Kevinshome</span> for UI design insights.
+        </div>
+      </div>
+
+      <div class="credits-group">
+        <div class="credits-title-row">
+          <img src="icon/verified.png" class="btn-icon-asset" alt="verified"/>
+          <span id="ui-lbl-open">开源框架及声明</span>
+          <span class="license-link" onclick="openLicenseModal()">[查看许可]</span>
+        </div>
+        <div class="license-text">
+          Desktop Shell: Electron Cross-Platform Shell (MIT)<br>
+  Logic Core: Node.js & Go Native Runtime (MIT / BSD 3-Clause)<br>
+  Data Storage: NeDB Embedded Database Layer (MIT)<br>
+  UI Components: Google Material Symbols (Apache 2.0)<br>
+  Local Picker: Flatpickr.js Module (MIT)<br>
+  Typography: Inter Variable Font Collection (OFL 1.1)
+        </div>
+      </div>
+
+      <div class="credits-group">
+        <div class="credits-title-row">
+          <img src="icon/contact.png" class="btn-icon-asset" alt="contact"/>
+          <span id="ui-lbl-contact">联系方式</span>
+        </div>
+        <div class="credit-line" id="ui-lbl-email-row">E-Mail: <span>willstationdev@outlook.com</span></div>
+      </div>
+
+      <div class="modal-footer-controls">
+        <div class="btn-inline-row">
+          <button class="btn-modal-action btn-export" onclick="exportData()" id="ui-btn-export-all">导出</button>
+          <button class="btn-modal-action btn-export" onclick="resetAllData()" id="ui-btn-reset">重置</button>
+        </div>
+        <div class="btn-inline-row">
+          <button class="btn-modal-action btn-ok" onclick="toggleModal(false)" id="ui-btn-ok">确认</button>
+        </div>
+      </div>
+
+      <div class="modal-copyright">
+        Copyright © 2026 Yong Wang (Dominicaka).<br>
+        Will Station and its logo are the exclusive property of the author.
+      </div>
+      <div class="modal-version">
+        Will Station v1.0.5 UGREEN NAS App
+        </div>
+    </div>
+  </div>
+
+  <div class="confirm-overlay" id="licenseModal" style="z-index: 1002;">
+    <div class="confirm-dialog" style="max-width: 500px; text-align: left; padding: 24px;">
+      <h3 style="margin-bottom: 16px; color: var(--text-main); font-size: 18px;" id="ui-license-title">第三方开源许可</h3>
+      <div style="background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; max-height: 45vh; overflow-y: auto;">
+        <pre id="licenseTextContent" style="font-size: 12px; color: var(--text-muted); white-space: pre-wrap; font-family: monospace; line-height: 1.5; margin: 0;"></pre>
+      </div>
+      <div style="text-align: right; margin-top: 16px;">
+        <button class="confirm-btn secondary" onclick="closeLicenseModal()" id="ui-btn-license-close">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-dialog">
+      <p id="confirmMessage"></p>
+      <div class="confirm-buttons">
+        <button class="confirm-btn secondary" id="confirmBtnSecondary">否</button>
+        <button class="confirm-btn primary" id="confirmBtnPrimary">是</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 基础全局变量
+    let tasks = [];
+    let currentFilter = 'all';
+    let isFocusMode = false;
+    let mainDatePicker = null;
+    let editDatePickers = [];
+    let currentLang = 'zh'; 
+    let subtitleTimer = null; 
+    let configSaveTimer = null; 
+
+    // 语言对照包（保持原版，100%不乱动）
+    const i18n = {
+      en: {
+        all: "All Tasks", today: "Today's", mark: "Mark", done: "Done", overdue: "Overdue", bin: "Bin",
+        appTitle: "Will Station", btnTheme: "Theme", btnFocus: "Focus Mode", btnAbout: "About", btnLang: "Language", 
+        inputPlace: "What needs to be done today?", btnAdd: "Add", empty: "No tasks here, Just Chill.",
+        lblCredits: "Credits", lblOpen: "Open Source & Frameworks", lblContact: "Contact", btnExport: "Export", btnReset: "Reset", btnOk: "Confirm", subtitle: "Your Will will be arranged.",
+        focusLeft: "Today Task Left", btnExit: "Exit", focusInput: "Add a new task for today...",
+        confirmReset1: "Are you sure you want to reset?\nThis action cannot be undone.",
+        confirmReset2: "All tasks and data will be cleared.\nPlease confirm again to proceed.",
+        confirmNo: "No", confirmYes: "Yes", confirmFinal: "Completely Sure",
+        licenseTitle: "3rd Party Licenses", btnClose: "Close"
+      },
+      zh: {
+        all: "全部事项", today: "今日", mark: "标记", done: "完成", overdue: "过期", bin: "回收站",
+        appTitle: "Will Station", btnTheme: "切换色彩", btnFocus: "专注模式", btnAbout: "关于", btnLang: "切换语言", 
+        inputPlace: "今天计划完成哪些工作？", btnAdd: "添加", empty: "此处没有待办事项，尽请放松。",
+        lblCredits: "创作者", lblOpen: "开源框架及声明", lblContact: "联系方式", btnExport: "导出", btnReset: "重置", btnOk: "确认", subtitle: "Your Will will be arranged.",
+        focusLeft: "今日剩余任务", btnExit: "退出专注", focusInput: "添加一项今日新任务...",
+        confirmReset1: "是否确认重置？\n此操作无法撤销。",
+        confirmReset2: "所有任务和数据将被清除，\n再次确认是否继续。",
+        confirmNo: "否", confirmYes: "是", confirmFinal: "完全确定",
+        licenseTitle: "第三方开源许可", btnClose: "关闭"
+      }
+    };
+
+    const LICENSE_TEXT = `1. Electron Framework
+Copyright (c) OpenJS Foundation and Electron contributors
+Licensed under the MIT License.
+
+2. NeDB-Promises Module
+Copyright (c) 2016 Benedikt Lang
+Licensed under the MIT License.
+
+3. Flatpickr.js
+Copyright (c) 2017 Gregory Petrosyan
+Licensed under the MIT License.
+
+4. Google Material Symbols
+Copyright (c) Google LLC
+Licensed under the Apache License, Version 2.0.
+
+5. Inter Font
+Copyright (c) 2016-2024 The Inter Project Authors
+Licensed under the SIL Open Font License, Version 1.1.
+
+6. Go Language Runtime Environment
+Copyright (c) 2009 The Go Authors. All rights reserved.
+Licensed under the BSD 3-Clause License.
+
+7. "Will Station" GitHub Source Code Repository
+https://github.com/Dominicaka/
+Licensed under AGPL-3.0`;
+
+    // 辅助时间函数数值比对
+    function parseDateToTimestamp(dateStr) {
+      if (!dateStr || dateStr === '--') return 0;
+      const parts = dateStr.split('-');
+      if (parts.length !== 3) return 0;
+      return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)).getTime();
+    }
+
+    function getLocalDateString() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    // 全局错误边界捕捉
+    window.addEventListener('error', function(e) { console.error("Global Catch Error: ", e.error || e.message); });
+    window.addEventListener('unhandledrejection', function(e) { console.error("Unhandled Promise Rejection: ", e.reason); });
+
+    // 初始化加载
+    document.addEventListener("DOMContentLoaded", function() {
+      const todayStr = getLocalDateString();
+      const dateDisplay = document.getElementById('dateDisplay');
+      if (dateDisplay) dateDisplay.textContent = todayStr;
+      
+      if (typeof flatpickr !== 'undefined') {
+        mainDatePicker = flatpickr("#taskDate", {
+          defaultDate: todayStr,
+          dateFormat: "Y-m-d",
+          appendTo: document.getElementById('mainTopControlBar'), 
+          position: "auto right", 
+          monthSelectorType: "dropdown", 
+          onChange: function(dates, dateStr) { if (dateDisplay) dateDisplay.textContent = dateStr; }
+        });
+      }
+      loadDataFromStorage();
+    });
+
+    // ==========================================================================
+    // 🚀 ELECTRON LOCAL IPC DATA CORES (本地通信层)
+    // ==========================================================================
+    async function loadDataFromStorage() {
+      if (!window.electronAPI) { console.warn("Not running in Electron context."); return; }
+      const data = await window.electronAPI.init();
+      if (data) {
+        tasks = data.tasks || [];
+        const config = data.config || { theme: 'light', lang: 'zh', focusSubtitle: '' };
+        const savedTheme = config.theme || 'light';
+        document.body.setAttribute('data-theme', savedTheme);
+        const themeAsset = document.getElementById('theme-btn-asset');
+        if (themeAsset) themeAsset.src = savedTheme === 'light' ? 'icon/night.png' : 'icon/day.png';
+        const subInput = document.getElementById('focusSubtitle');
+        if (subInput && config.focusSubtitle !== undefined) subInput.value = config.focusSubtitle;
+        currentLang = config.lang || 'zh'; 
+        updateLanguageUI();
+      } else {
+        updateLanguageUI();
+      }
+    }
+
+    function saveConfigToServerDebounced() {
+      clearTimeout(configSaveTimer);
+      configSaveTimer = setTimeout(async () => {
+        const currentTheme = document.body.getAttribute('data-theme') || 'light';
+        const subTitleVal = document.getElementById('focusSubtitle').value;
+        const configObj = { theme: currentTheme, lang: currentLang, focusSubtitle: subTitleVal };
+        await window.electronAPI.saveConfig(configObj);
+      }, 300);
+    }
+
+    function saveSubtitleDebounced() {
+      clearTimeout(subtitleTimer);
+      subtitleTimer = setTimeout(() => { saveConfigToServerDebounced(); }, 500);
+    }
+
+    async function handleAddTask() {
+      if (isFocusMode) return; 
+      const taskInput = document.getElementById('taskInput');
+      const text = taskInput ? taskInput.value.trim() : '';
+      if (!text) return;
+      const dateDisp = document.getElementById('dateDisplay');
+      const targetDate = dateDisp ? dateDisp.textContent : getLocalDateString();
+      
+      const optimisticId = "temp_" + Date.now();
+      tasks.push({ id: optimisticId, text: text, date: targetDate, completed: false, marked: false, isDeleted: false });
+      if (taskInput) taskInput.value = ''; 
+      render(); 
+
+      const resp = await window.electronAPI.addTask({ text, date: targetDate });
+      if (resp && resp.status === 'success') { tasks = resp.tasks; } else { tasks = tasks.filter(t => t.id !== optimisticId); }
+      render();
+    }
+
+    async function handleAddFocusTask() {
+      if (!isFocusMode) return;
+      const fInput = document.getElementById('focusTaskInput');
+      const text = fInput ? fInput.value.trim() : '';
+      if (!text) return;
+      const targetDate = getLocalDateString();
+      
+      const optimisticId = "temp_focus_" + Date.now();
+      tasks.push({ id: optimisticId, text: text, date: targetDate, completed: false, marked: false, isDeleted: false });
+      if (fInput) fInput.value = ''; 
+      render(); 
+
+      const resp = await window.electronAPI.addTask({ text, date: targetDate });
+      if (resp && resp.status === 'success') { tasks = resp.tasks; } else { tasks = tasks.filter(t => t.id !== optimisticId); }
+      render();
+    }
+
+    async function modifyTaskDate(id, newDate) { 
+      const target = tasks.find(t => t.id === id);
+      if (!target) return;
+      const prevDate = target.date;
+      target.date = newDate;
+      render(); 
+      const resp = await window.electronAPI.updateTask(id, { date: newDate });
+      if (resp && resp.status === 'success') { tasks = resp.tasks; } else { target.date = prevDate; }
+      render();
+    }
+    
+    async function toggleComplete(id) { 
+      const target = tasks.find(t => t.id === id);
+      if (!target) return;
+      target.completed = !target.completed;
+      render(); 
+      const resp = await window.electronAPI.updateTask(id, { completed: target.completed });
+      if (resp && resp.status === 'success') { tasks = resp.tasks; } else { target.completed = !target.completed; }
+      render();
+    }
+    
+    async function toggleMark(id) { 
+      const target = tasks.find(t => t.id === id);
+      if (!target) return;
+      target.marked = !target.marked;
+      render(); 
+      const resp = await window.electronAPI.updateTask(id, { marked: target.marked });
+      if (resp && resp.status === 'success') { tasks = resp.tasks; } else { target.marked = !target.marked; }
+      render();
+    }
+    
+    async function softDelete(id) { 
+      const target = tasks.find(t => t.id === id);
+      if (!target) return;
+      const previousState = { ...target };
+      target.isDeleted = true;
+      render(); 
+      const resp = await window.electronAPI.updateTask(id, { isDeleted: true });
+      if (resp && resp.status === 'success') { tasks = resp.tasks; } else { Object.assign(target, previousState); }
+      render();
+    }
+    
+    async function permanentDelete(id) { 
+      const idx = tasks.findIndex(t => t.id === id);
+      if (idx === -1) return;
+      const backupTask = tasks[idx];
+      tasks.splice(idx, 1); 
+      render();
+      const resp = await window.electronAPI.deleteTask(id);
+      if (resp && resp.status === 'success') { tasks = resp.tasks; } else { tasks.push(backupTask); }
+      render();
+    }
+
+    async function resetAllData() {
+      const t = i18n[currentLang];
+      showConfirm(t.confirmReset1, t.confirmNo, t.confirmYes, () => {
+        showConfirm(t.confirmReset2, t.confirmNo, t.confirmFinal, async () => {
+          const resp = await window.electronAPI.reset();
+          if (resp && resp.status === 'success') {
+            tasks = [];
+            const todayStr = getLocalDateString();
+            if (document.getElementById('dateDisplay')) document.getElementById('dateDisplay').textContent = todayStr;
+            if (mainDatePicker) mainDatePicker.setDate(todayStr);
+            render();
+            toggleModal(false);
+          }
+        });
+      });
+    }
+
+    async function exportData() {
+      try {
+        const resp = await window.electronAPI.exportData(currentLang);
+        if (resp && resp.status === 'success') {
+          alert(currentLang === 'zh' ? `备份数据已成功导出至您的系统下载文件夹！` : `Backup file exported to Downloads folder!`);
+        } else { throw new Error(); }
+      } catch (error) {
+        alert(currentLang === 'zh' ? "备份文件导出失败。" : "Export data failed.");
+      }
+    }
+
+    // ==========================================================================
+    // 🎨 UI RENDER CORES (纯前端视图渲染层，完全保留原版精髓)
+    // ==========================================================================
+    function switchMenu(filterType, element) {
+      document.querySelectorAll('.sidebar .menu-item').forEach(el => el.classList.remove('active'));
+      element.classList.add('active');
+      currentFilter = filterType;
+      updateViewHeading();
+      render();
+    }
+
+    function updateViewHeading() { 
+      const heading = document.getElementById('currentViewTitle');
+      if (heading) heading.textContent = i18n[currentLang][currentFilter]; 
+    }
+
+    function sortTasks(taskList) {
+      return taskList.sort((a, b) => {
+        if (a.completed !== b.completed) return a.completed ? 1 : -1;
+        const timeA = parseDateToTimestamp(a.date);
+        const timeB = parseDateToTimestamp(b.date);
+        if (timeA !== timeB) return timeA - timeB;
+        return String(b.id).localeCompare(String(a.id)); 
+      });
+    }
+
+    function render() {
+      if (isFocusMode) { renderFocusMode(); } else { renderMainApp(); }
+      const todayStr = getLocalDateString();
+      const todayTime = parseDateToTimestamp(todayStr);
+      
+      const uiBadges = {
+        'badge-all': tasks.filter(t => !t.isDeleted).length,
+        'badge-today': tasks.filter(t => t.date === todayStr && !t.isDeleted).length,
+        'badge-mark': tasks.filter(t => t.marked && !t.isDeleted).length,
+        'badge-done': tasks.filter(t => t.completed && !t.isDeleted).length,
+        'badge-overdue': tasks.filter(t => parseDateToTimestamp(t.date) < todayTime && !t.completed && !t.isDeleted).length,
+        'badge-bin': tasks.filter(t => t.isDeleted).length
+      };
+      Object.keys(uiBadges).forEach(id => { const el = document.getElementById(id); if(el) el.textContent = uiBadges[id]; });
+    }
+
+    function renderMainApp() {
+      const feed = document.getElementById('mainTaskFeed');
+      if (!feed) return;
+      feed.innerHTML = '';
+      
+      if (editDatePickers && editDatePickers.length > 0) {
+        editDatePickers.forEach(fp => { if(fp && typeof fp.destroy === 'function') fp.destroy(); });
+        editDatePickers = [];
+      }
+
+      const todayStr = getLocalDateString();
+      const todayTime = parseDateToTimestamp(todayStr);
+
+      let filtered = tasks.filter(task => {
+        if (currentFilter === 'bin') return task.isDeleted;
+        if (task.isDeleted) return false;
+        switch(currentFilter) {
+          case 'today': return task.date === todayStr;
+          case 'mark': return task.marked; 
+          case 'done': return task.completed;
+          case 'overdue': return parseDateToTimestamp(task.date) < todayTime && !task.completed;
+          case 'all': default: return true; 
+        }
+      });
+
+      filtered = sortTasks(filtered);
+
+      if (filtered.length === 0) {
+        feed.innerHTML = `<div class="empty-state">${i18n[currentLang].empty}</div>`;
+      } else {
+        const fragment = document.createDocumentFragment();
+        filtered.forEach(task => {
+          const isOverdue = parseDateToTimestamp(task.date) < todayTime && !task.completed;
+          const card = document.createElement('div');
+          card.className = `uniform-card-style task-card ${task.completed ? 'completed' : ''} ${isOverdue ? 'overdue-task' : ''}`;
+          const markIcon = task.marked ? 'marked.png' : 'mark.png';
+          
+          card.innerHTML = `
+            <div class="checkbox" onclick="toggleComplete('${task.id}')"></div>
+            <div class="task-details"><h3></h3></div>
+            <div class="task-card-right-deck">
+              <div class="task-editable-date">
+                <span class="task-card-date">${task.date || '--'}</span>
+                <input type="text" class="edit-date-input" data-id="${task.id}" value="${task.date}">
+              </div>
+              <img src="icon/${markIcon}" class="action-icon-btn marked-${task.marked}" onclick="toggleMark('${task.id}')" />
+              <img src="icon/delete.png" class="action-icon-btn" onclick="${task.isDeleted ? `permanentDelete('${task.id}')` : `softDelete('${task.id}')`}" />
+            </div>
+          `;
+          card.querySelector('h3').textContent = task.text;
+          fragment.appendChild(card);
+        });
+        feed.appendChild(fragment); 
+
+        if (typeof flatpickr !== 'undefined') {
+          const pickers = flatpickr(".edit-date-input", {
+            appendTo: document.getElementById('mainAppView'), 
+            dateFormat: "Y-m-d",
+            position: "auto right", 
+            monthSelectorType: "dropdown", 
+            onChange: function(selectedDates, dateStr, instance) {
+              modifyTaskDate(instance.element.dataset.id, dateStr);
+            }
+          });
+          editDatePickers = Array.isArray(pickers) ? pickers : [pickers];
+        }
+      }
+    }
+
+    function renderFocusMode() {
+      const focusFeed = document.getElementById('focusTaskFeed');
+      if (!focusFeed) return;
+      focusFeed.innerHTML = '';
+      const todayStr = getLocalDateString();
+      let focusCount = 0;
+
+      let focusTasks = tasks.filter(task => task.date === todayStr && !task.isDeleted);
+      focusTasks = sortTasks(focusTasks);
+      const fragment = document.createDocumentFragment();
+
+      focusTasks.forEach(task => {
+        if (!task.completed) focusCount++;
+        const fCard = document.createElement('div');
+        fCard.className = `uniform-card-style task-card ${task.completed ? 'completed' : ''}`;
+        fCard.innerHTML = `
+          <div class="checkbox" onclick="toggleComplete('${task.id}')"></div>
+          <div class="task-details"><h3></h3></div>
+          <div class="task-card-right-deck">
+            <img src="icon/delete.png" class="action-icon-btn" onclick="softDelete('${task.id}')" />
+          </div>
+        `;
+        fCard.querySelector('h3').textContent = task.text;
+        fragment.appendChild(fCard);
+      });
+
+      focusFeed.appendChild(fragment);
+      const focusDisplay = document.getElementById('focusCountDisplay');
+      if (focusDisplay) focusDisplay.textContent = focusCount;
+    }
+
+    function toggleTheme() {
+      const body = document.body;
+      const isLight = body.getAttribute('data-theme') === 'light';
+      const newTheme = isLight ? 'dark' : 'light';
+      body.setAttribute('data-theme', newTheme);
+      const themeAsset = document.getElementById('theme-btn-asset');
+      if (themeAsset) themeAsset.src = isLight ? 'icon/night.png' : 'icon/day.png';
+      saveConfigToServerDebounced(); 
+    }
+
+    function triggerFocusMode() {
+      isFocusMode = true;
+      if (editDatePickers && editDatePickers.length > 0) {
+        editDatePickers.forEach(fp => { if(fp && typeof fp.destroy === 'function') fp.destroy(); });
+        editDatePickers = [];
+      }
+      document.body.classList.add('focus-mode-active');
+      document.getElementById('mainAppView').classList.replace('view-active', 'view-hidden');
+      document.getElementById('focusModeView').classList.replace('view-hidden', 'view-active');
+      render();
+    }
+
+    function exitFocusMode() {
+      isFocusMode = false;
+      document.body.classList.remove('focus-mode-active');
+      document.getElementById('focusModeView').classList.replace('view-active', 'view-hidden');
+      document.getElementById('mainAppView').classList.replace('view-hidden', 'view-active');
+      render();
+    }
+
+    function toggleModal(show) { document.getElementById('aboutModal').classList.toggle('active', show); }
+
+    function toggleLanguage() {
+      const indicator = document.getElementById('lang-indicator');
+      if (indicator) indicator.classList.add('lang-changing');
+      setTimeout(() => {
+        currentLang = (currentLang === 'en') ? 'zh' : 'en';
+        updateLanguageUI();
+        if (indicator) indicator.classList.remove('lang-changing');
+        saveConfigToServerDebounced(); 
+      }, 200);
+    }
+
+    function updateLanguageUI() {
+      const t = i18n[currentLang];
+      const uiElements = {
+        'lang-indicator': currentLang === 'en' ? 'English' : '简体中文',
+        'ui-menu-all': t.all, 'ui-menu-today': t.today, 'ui-menu-mark': t.mark,
+        'ui-menu-done': t.done, 'ui-menu-overdue': t.overdue, 'ui-menu-bin': t.bin,
+        'ui-btn-theme': t.btnTheme, 'ui-btn-focus': t.btnFocus, 'ui-btn-about': t.btnAbout,
+        'ui-btn-lang': t.btnLang, 'ui-btn-add-text': t.btnAdd, 'ui-modal-title': t.appTitle,
+        'ui-modal-subtitle': t.subtitle, 'ui-lbl-credits': t.lblCredits, 'ui-lbl-open': t.lblOpen,
+        'ui-lbl-contact': t.lblContact, 'ui-btn-export-all': t.btnExport, 'ui-btn-reset': t.btnReset,
+        'ui-btn-ok': t.btnOk, 'ui-focus-left': t.focusLeft, 'ui-btn-exit': t.btnExit,
+        'ui-license-title': t.licenseTitle, 'ui-btn-license-close': t.btnClose
+      };
+      Object.keys(uiElements).forEach(id => { const el = document.getElementById(id); if (el) el.textContent = uiElements[id]; });
+
+      if (document.getElementById('taskInput')) document.getElementById('taskInput').placeholder = t.inputPlace;
+      if (document.getElementById('focusTaskInput')) document.getElementById('focusTaskInput').placeholder = t.focusInput;
+      updateViewHeading();
+      render(); // 🚀 顺手加上，防止多语言空状态不刷新
+    }
+
+    function openLicenseModal() {
+      document.getElementById('licenseModal').classList.add('active');
+      if (document.getElementById('licenseTextContent')) document.getElementById('licenseTextContent').textContent = LICENSE_TEXT;
+    }
+    function closeLicenseModal() { document.getElementById('licenseModal').classList.remove('active'); }
+
+    function showConfirm(message, secondaryText, primaryText, onPrimary) {
+      const overlay = document.getElementById('confirmOverlay');
+      if (document.getElementById('confirmMessage')) document.getElementById('confirmMessage').innerHTML = message; 
+      const secondaryBtnOld = document.getElementById('confirmBtnSecondary');
+      const primaryBtnOld = document.getElementById('confirmBtnPrimary');
+      const secondaryBtn = secondaryBtnOld.cloneNode(true);
+      const primaryBtn = primaryBtnOld.cloneNode(true);
+      
+      secondaryBtnOld.parentNode.replaceChild(secondaryBtn, secondaryBtnOld);
+      primaryBtnOld.parentNode.replaceChild(primaryBtn, primaryBtnOld);
+      secondaryBtn.textContent = secondaryText; primaryBtn.textContent = primaryText;
+      overlay.classList.add('active');
+      
+      const cleanup = () => { overlay.classList.remove('active'); };
+      secondaryBtn.addEventListener('click', () => { cleanup(); });
+      primaryBtn.addEventListener('click', () => { cleanup(); onPrimary(); });
+    }
+
+    document.getElementById('taskInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') handleAddTask(); });
+    document.getElementById('focusTaskInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') handleAddFocusTask(); });
+  </script>
+</body>
+</html>
